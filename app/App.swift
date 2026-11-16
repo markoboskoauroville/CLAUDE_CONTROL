@@ -3,7 +3,7 @@
 // which is called Claude Control. And I can pause all the tasks which are happening and also resume them. Play pause button, simple."
 import AppKit
 
-let VERSION = 1
+let VERSION = 2
 let APP_NAME = "Claude Control (Mantra)"
 
 @main
@@ -42,6 +42,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             b.target = self
             b.action = #selector(clicked(_:))
             b.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+        HoverCard.attach(to: item) { [weak self] in
+            guard let self else { return HoverCard.Content(name: "Claude Control (Mantra)", what: "", state: "") }
+            var lines = ["Sessions: \(self.sessions.count)"]
+            for s in self.sessions.prefix(2) { lines.append((s.paused ? "PAUSED  " : "RUNNING  ") + (s.folder as NSString).lastPathComponent) }
+            for t in self.tools.prefix(2) { lines.append(t.state.uppercased() + "  " + t.name) }
+            if self.paused, let sc = self.since { lines.append("Paused \(Int(Date().timeIntervalSince1970 - sc) / 60) min") }
+            return HoverCard.Content(name: "Claude Control (Mantra)", what: "Pauses and resumes all Claude Code sessions and tools",
+                state: self.paused ? "PAUSED" : (self.sessions.isEmpty ? "NO SESSION" : "RUNNING"),
+                stateColor: self.paused ? .systemOrange : .systemGreen, lines: lines)
         }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.refresh() }
