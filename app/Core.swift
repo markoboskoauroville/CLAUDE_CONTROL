@@ -194,6 +194,10 @@ enum Core {
     }
     static func toolStates() -> [ToolState] { loadTools().map(toolState) }
 
+    static func pauseTool(_ name: String) { if let t = loadTools().first(where: { $0.name == name }) { _ = run(t.pause) } }
+    static func resumeTool(_ name: String) { if let t = loadTools().first(where: { $0.name == name }) { _ = run(t.resume) } }
+    static func shortName(_ n: String) -> String { n.lowercased().contains("macro") ? "MACRO" : n.uppercased() }
+
     // ------------------------------------------------------------ all together
     static func pauseAll() -> String {
         var notes: [String] = []

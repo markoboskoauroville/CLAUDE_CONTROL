@@ -11,8 +11,9 @@ import AppKit
 
 final class StatusBand: NSView {
     static let floorDB: Float = -54
-    var word = "" { didSet { if word != oldValue { needsDisplay = true } } }
-    var wordColor: NSColor = .white { didSet { needsDisplay = true } }
+    var segments: [(String, NSColor)] = [] { didSet { needsDisplay = true } }    // coloured parts of one line
+    var word: String { get { segments.map { $0.0 }.joined() } set { segments = [(newValue, wordColor)] } }
+    var wordColor: NSColor = .white { didSet { if segments.count == 1 { segments = [(segments[0].0, wordColor)] } } }
     var locked = false { didSet { if locked != oldValue { needsDisplay = true } } }
     var meterDB: Float? {
         didSet {
@@ -33,7 +34,7 @@ final class StatusBand: NSView {
         track.minX + CGFloat(max(0, min(1, (db - StatusBand.floorDB) / -StatusBand.floorDB))) * track.width
     }
     override func draw(_ r: NSRect) {
-        guard !word.isEmpty else { return }
+        guard !segments.isEmpty else { return }
         HoverCard.drawPipes(in: bounds)
         let band = bounds.insetBy(dx: 4, dy: 0)
         NSColor(white: 0, alpha: 0.55).setFill()
@@ -45,9 +46,10 @@ final class StatusBand: NSView {
             cfg?.draw(in: NSRect(x: 11, y: (band.height - 3 - s.height) / 2 + 1, width: s.width, height: s.height))
             left = 11 + s.width + 3
         }
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: wordColor]
-        let sz = (word as NSString).size(withAttributes: attrs)
-        (word as NSString).draw(at: NSPoint(x: left, y: (band.height - 3 - sz.height) / 2), withAttributes: attrs)
+        let att = NSMutableAttributedString()
+        for (t, c) in segments { att.append(NSAttributedString(string: t, attributes: [.font: font, .foregroundColor: c])) }
+        let sz = att.size()
+        att.draw(at: NSPoint(x: left, y: (band.height - 3 - sz.height) / 2))
         // the hairline meter on the bottom edge (flipped view: bottom = maxY)
         let track = NSRect(x: band.minX + 7, y: band.maxY - 3, width: max(0, band.width - 14), height: 2)
         guard track.width > 4 else { return }
