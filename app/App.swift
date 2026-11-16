@@ -3,7 +3,7 @@
 // which is called Claude Control. And I can pause all the tasks which are happening and also resume them. Play pause button, simple."
 import AppKit
 
-let VERSION = 2
+let VERSION = 3
 let APP_NAME = "Claude Control (Mantra)"
 
 @main
