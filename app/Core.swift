@@ -51,7 +51,7 @@ enum Core {
         for line in text.split(separator: "\n") {
             let parts = line.split(separator: " ", maxSplits: 3, omittingEmptySubsequences: true)
             guard parts.count == 4, let pid = Int32(parts[0]), let pp = Int32(parts[1]) else { continue }
-            list.append(Proc(pid: pid, ppid: pp, stat: String(parts[2]), cmd: String(parts[3])))
+            list.append(Proc(pid: pid, ppid: pp, stat: String(parts[2]), cmd: String(parts[3]).trimmingCharacters(in: .whitespaces)))
         }
         return list
     }
@@ -91,7 +91,13 @@ enum Core {
         var kids: [Int32: [Proc]] = [:]
         for p in all { kids[p.ppid, default: []].append(p) }
         let voice = voiceServerPids()
-        let roots = all.filter { isClaude($0) && !isProtected($0, voicePids: voice) }
+        let byPid = Dictionary(all.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
+        func hasClaudeAncestor(_ p: Proc) -> Bool {       // a forked copy of claude below a claude is part of that session, not a new one
+            var q = byPid[p.ppid], hops = 0
+            while let x = q, hops < 64 { if isClaude(x) { return true }; q = byPid[x.ppid]; hops += 1 }
+            return false
+        }
+        let roots = all.filter { isClaude($0) && !isProtected($0, voicePids: voice) && !hasClaudeAncestor($0) }
         var seen = Set<Int32>(), members: [(Proc, Int, Bool)] = []
         func walk(_ p: Proc, _ d: Int, _ root: Bool) {
             if seen.contains(p.pid) || isProtected(p, voicePids: voice) { return }
